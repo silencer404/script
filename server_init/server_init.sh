@@ -402,11 +402,6 @@ choose_sshd_config_target() {
         return 1
     fi
 
-    if [[ -d "$dropin_dir" ]]; then
-        printf '%s\n' "$dropin_file"
-        return 0
-    fi
-
     if [[ -r "$main_config" ]] && awk '
         BEGIN { found = 0 }
         {
@@ -630,7 +625,7 @@ sshd_apply_with_rollback() {
         else
             rm -f "$target"
         fi
-        rm -f "$backup"
+        [[ -n "$backup" ]] && rm -f "$backup"
         return 1
     fi
 
@@ -640,12 +635,12 @@ sshd_apply_with_rollback() {
         else
             rm -f "$target"
         fi
-        rm -f "$backup"
+        [[ -n "$backup" ]] && rm -f "$backup"
         return 1
     fi
 
     if systemctl restart "$ssh_unit"; then
-        rm -f "$backup"
+        [[ -n "$backup" ]] && rm -f "$backup"
         return 0
     fi
 
@@ -656,7 +651,7 @@ sshd_apply_with_rollback() {
         rm -f "$target"
     fi
 
-    rm -f "$backup"
+    [[ -n "$backup" ]] && rm -f "$backup"
 
     if ! sshd_validate_config; then
         echo "错误: 回滚后 sshd 配置校验失败，请手动介入。" 1>&2
@@ -706,7 +701,7 @@ sshd_apply_port_with_rollback() {
         else
             rm -f "$target"
         fi
-        rm -f "$backup"
+        [[ -n "$backup" ]] && rm -f "$backup"
         return 1
     fi
 
@@ -716,12 +711,12 @@ sshd_apply_port_with_rollback() {
         else
             rm -f "$target"
         fi
-        rm -f "$backup"
+        [[ -n "$backup" ]] && rm -f "$backup"
         return 1
     fi
 
     if systemctl restart "$ssh_unit"; then
-        rm -f "$backup"
+        [[ -n "$backup" ]] && rm -f "$backup"
         return 0
     fi
 
@@ -731,7 +726,7 @@ sshd_apply_port_with_rollback() {
     else
         rm -f "$target"
     fi
-    rm -f "$backup"
+    [[ -n "$backup" ]] && rm -f "$backup"
 
     if ! sshd_validate_config; then
         echo "错误: 回滚后 sshd 配置校验失败，请手动介入。" 1>&2
@@ -1056,6 +1051,7 @@ tui_checklist() {
             if [[ -z "$input_line" ]]; then
                 printf '%s\n' "${defaults[@]}"
             else
+                local IFS=' '
                 for token in $input_line; do
                     printf '%s\n' "$token"
                 done
@@ -1080,6 +1076,7 @@ split_csv_users() {
     fi
 
     csv="${csv//,/ }"
+    local IFS=' '
     for token in $csv; do
         [[ -z "$token" ]] && continue
         if ! validate_username "$token"; then
